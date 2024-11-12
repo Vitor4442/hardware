@@ -12,16 +12,15 @@ void loop() {
     char c = Serial.read();  
     digitalWrite(led, (c == 'A') ? HIGH : (c == 'a') ? LOW : LOW);
     contador++;
-    imprimirASCII(c); 
+    imprimirHEXA(c); 
   }
 }
 
-
-void imprimirASCII(char c) {
-  int valorASCII = (int)c;  
+void imprimirHEXA(char c) {
+  int HEXtoASCIIdisplay = (int)c;  
   Serial.print("Caractere: ");
   Serial.print(c);
-  Serial.print(" - ASCII: ");
-  Serial.println(valorASCII);
+  Serial.print(" - Hexadecimal: 0x");  
+  Serial.println(HEXtoASCIIdisplay, HEX);  
   Serial.println(contador);
 }

@@ -9,14 +9,6 @@ void loop() {
   delay(tmp);
   Serial.write('a');  // Envia 'a' para o Escravo
   delay(tmp);
-
-  // Verifica se há dados enviados pelo escravo
-  if (Serial.available() > 0) {
-    // Lê a resposta enviada pelo escravo
-    String resposta = Serial.readStringUntil('\n');
-    Serial.print("Escravo respondeu: ");
-    Serial.println(resposta);
-  }
-  
   Serial.flush();
-}
+
+  }
