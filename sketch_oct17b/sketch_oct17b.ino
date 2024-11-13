@@ -5,10 +5,9 @@ void setup() {
 }
 
 void loop() {
-  Serial.write('A');  // Envia 'A' para o Escravo
+  Serial.write('A'); 
   delay(tmp);
-  Serial.write('a');  // Envia 'a' para o Escravo
+  Serial.write('a');  
   delay(tmp);
   Serial.flush();
-
-  }
+}
