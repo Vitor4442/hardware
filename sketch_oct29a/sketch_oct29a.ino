@@ -2,43 +2,44 @@
 int contador = 0;
 
 void setup() {
-
   Serial.begin(19200); 
   pinMode(led, OUTPUT);
   digitalWrite(led, LOW); 
 }
 
 void loop() {
-
   if (Serial.available() > 0) {  
     char c = Serial.read();
-    
+
     digitalWrite(led, (c == 'A') ? HIGH : (c == 'a') ? LOW : LOW);
 
-    converterASCparadec(c);
+        int valorASCII = (int)c;
+        int digito1, digito2;
+
+    imprimir(valorASCII, digito1, digito2);
+
+    
     contador++;
   }
 }
 
-
-void converterASCparadec(char c) {
+void converterASCparadec(char c, int digito1, int digito2) {
   int valorASCII = (int)c;
 
-  int dezena = valorASCII / 10;
+  int dezena= valorASCII / 10;
   int unidade = valorASCII % 10;
+  
 
-  char digito1 = '0' + dezena;
-  char digito2 = '0' + unidade;
-
-  Serial.print("Caractere: ");
-  Serial.println(c); 
-
-  Serial.print("Valor ASCII: ");
-  Serial.println(valorASCII); 
-
-
-  Serial.print("ASC dos digitos: ");
-  Serial.print((int)digito1); 
-  Serial.print(" e ");
-  Serial.print((int)digito2);
+  digito1  = (dezena <=9) ? (dezena + 48) : (dezena + 55);
+  digito2 = (unidade <=9) ? (unidade + 48) : (unidade + 55);
 }
+
+void imprimir(int valorASCII, int digito1, int digito2) {
+  Serial.print("Character ASCII: ");
+  Serial.write(valorASCII);
+  Serial.print("Valor em ASCII: ");
+  Serial.write(digito1);
+  Serial.write(digito2);
+}
+
+
