@@ -1,13 +1,21 @@
-#define tmp 2000
+#define TMP 2000 
 
 void setup() {
-  Serial.begin(19200); 
+  Serial.begin(19200);  
 }
 
 void loop() {
-  Serial.write('A'); 
-  delay(tmp);
-  Serial.write('a');  
-  delay(tmp);
-  Serial.flush();
+  Serial.write('A');
+  delay(TMP);
+
+  while (Serial.available() > 0) {
+    Serial.read(); 
+  }
+
+  Serial.write('a');
+  delay(TMP);
+
+  while (Serial.available() > 0) {
+    Serial.read(); 
+  }
 }
