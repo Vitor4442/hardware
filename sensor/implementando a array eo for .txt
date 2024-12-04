@@ -1,0 +1,49 @@
+
+1- Criamos um espaço do armazenamento
+como queremos armazenar o digito  de  temperatura e umidade usaremos uma array multidimensional em char ja q os valores estao em char
+*Uma matriz (ou array multidimensional) que organiza os valores em linhas e colunas.
+*Cada linha é um registro.
+*A primeira coluna guarda os dig de umidade, e a segunda, os dig de temperatura.
+
+-------------------------------------------------------------------------------------------------
+
+2- Controle de Quantidade de Registros
+Como a memória de microcontroladores é limitada, criamos uma restrição de tamanho máximo:
+#define MAX_REGISTROS 10
+Isso significa que podemos guardar apenas 10 registros. Quando atingimos esse limite, o programa 
+volta ao início do array e sobrescreve os dados mais antigos, implementando um sistema de buffer 
+circular.
+
+----------------------------------------------------------------------------------------------------------------------------
+3- contar os indices
+ int indice = 0; // Índice para rastrear a posição de armazenamento
+
+ // Atualizar o índice circularmente
+  indice = (indice + 1) % MAX_REGISTROS;
+  
+  Essa linha atualiza o índice de forma circular para armazenar os dados no próximo espaço da matriz. Quando o índice atinge
+   o valor máximo permitido (MAX_REGISTROS), ele volta para o início (posição 0). Isso garante que os registros antigos sejam
+    sobrescritos quando a matriz estiver cheia.
+----------------------------------------------------------------------------------------------------------------------------------
+
+4. Armazenar os dados
+   no void imprimir ela ira pefar ja convertido os digitos de temperatura e de umidade e armazena cada um em usa dimensao
+   ados[indice][0] = umidDig1;
+  dados[indice][1] = umidDig2;
+  dados[indice][2] = tempDig1;
+  dados[indice][3] = tempDig2; 
+------------------------------------------------------------------------------------------------------
+5. Exibição dos Dados Armazenados
+Após salvar os valores no array, o programa pode exibir todos os registros armazenados. Isso é feito com
+um loop que percorre o array e imprime os valores.
+Serial.println("\n=== Dados Armazenados ===");
+  for (int i = 0; i < MAX_REGISTROS; i++) {
+    Serial.print("Registro ");
+    Serial.print(i);
+    Serial.print(": Umidade= ");
+    Serial.write(dados[i][0]);
+    Serial.write(dados[i][1]);
+    Serial.print(", Temperatura= ");
+    Serial.write(dados[i][2]);
+    Serial.write(dados[i][3]);
+    Serial.println();
