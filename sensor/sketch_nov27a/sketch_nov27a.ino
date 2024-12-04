@@ -1,10 +1,11 @@
 #include <DHT.h>
-
+#define MAX_REGISTROS 10
 #define DHTPIN 2      
 #define DHTTYPE DHT22  
 
 DHT dht(DHTPIN, DHTTYPE);
-
+char dados[MAX_REGISTROS][4];
+int indice = 0;
 
 void converterASCparadec(int valor, char& digito1, char& digito2, int base) {
   if (base != 16) {
@@ -20,28 +21,37 @@ void converterASCparadec(int valor, char& digito1, char& digito2, int base) {
 }
 
 void imprimir(int umidade, int temperatura) {
-  
   char umidDig1, umidDig2;
   char tempDig1, tempDig2;
 
   converterASCparadec(umidade, umidDig1, umidDig2, 16);
   converterASCparadec(temperatura, tempDig1, tempDig2, 16);
 
-  Serial.print("Umidade em Hexadecimal: ");
-  Serial.write(umidDig1);
-  Serial.write(umidDig2);
-  Serial.write('\n'); 
+  dados[indice][0] = umidDig1;
+  dados[indice][1] = umidDig2;
+  dados[indice][2] = tempDig1;
+  dados[indice][3] = tempDig2;
 
-  Serial.print("Temperatura em Hexadecimal: ");
-  Serial.write(tempDig1);
-  Serial.write(tempDig2);
-  Serial.write('\n'); 
+  indice = (indice + 1) % MAX_REGISTROS; 
+
+  Serial.println("\n=== Dados Armazenados ===");
+  for (int i = 0; i < MAX_REGISTROS; i++) {
+    Serial.print("Registro ");
+    Serial.print(i);
+    Serial.print(": Umidade= ");
+    Serial.write(dados[i][0]);
+    Serial.write(dados[i][1]);
+    Serial.print(", Temperatura= ");
+    Serial.write(dados[i][2]);
+    Serial.write(dados[i][3]);
+    Serial.println();
+  }
+  Serial.println("=========================\n");
 }
 
 void setup() {
   Serial.begin(9600);
   Serial.println("Iniciando leitura do DHT22...");
-  
   dht.begin(); 
 }
 
@@ -56,6 +66,5 @@ void loop() {
     return;
   }
 
- 
   imprimir(umidade, temperatura);
 }
