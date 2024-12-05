@@ -1,10 +1,11 @@
 #include <DHT.h>
+
 #define MAX_REGISTROS 10
-#define DHTPIN 2      
-#define DHTTYPE DHT22  
+#define DHTPIN 2
+#define DHTTYPE DHT22
 
 DHT dht(DHTPIN, DHTTYPE);
-char dados[MAX_REGISTROS][4];
+char dados[MAX_REGISTROS][4]; 
 int indice = 0;
 
 void converterASCparadec(int valor, char& digito1, char& digito2, int base) {
@@ -13,8 +14,8 @@ void converterASCparadec(int valor, char& digito1, char& digito2, int base) {
     return;
   }
 
-  int dezena = valor / base;  
-  int unidade = valor % base; 
+  int dezena = valor / base;
+  int unidade = valor % base;
 
   digito1 = (dezena <= 9) ? (dezena + '0') : (dezena - 10 + 'A');
   digito2 = (unidade <= 9) ? (unidade + '0') : (unidade - 10 + 'A');
@@ -27,12 +28,13 @@ void imprimir(int umidade, int temperatura) {
   converterASCparadec(umidade, umidDig1, umidDig2, 16);
   converterASCparadec(temperatura, tempDig1, tempDig2, 16);
 
+
   dados[indice][0] = umidDig1;
   dados[indice][1] = umidDig2;
   dados[indice][2] = tempDig1;
   dados[indice][3] = tempDig2;
 
-  indice = (indice + 1) % MAX_REGISTROS; 
+  indice = (indice + 1) % MAX_REGISTROS;
 
   Serial.println("\n=== Dados Armazenados ===");
   for (int i = 0; i < MAX_REGISTROS; i++) {
@@ -52,11 +54,11 @@ void imprimir(int umidade, int temperatura) {
 void setup() {
   Serial.begin(9600);
   Serial.println("Iniciando leitura do DHT22...");
-  dht.begin(); 
+  dht.begin();
 }
 
 void loop() {
-  delay(2000);
+  delay(2000); 
 
   int umidade = dht.readHumidity();
   int temperatura = dht.readTemperature();
@@ -67,4 +69,28 @@ void loop() {
   }
 
   imprimir(umidade, temperatura);
+
+  if (Serial.available()) {
+    char comando = Serial.read();
+
+    switch (comando) {
+      case 'T':
+        Serial.print("EB 90 Temperatura:");
+        Serial.write(dados[indice - 1][2]);
+        Serial.write(dados[indice - 1][3]);
+        Serial.println();
+        break;
+
+      case 'U':
+        Serial.print("EB 90 umidade: ");
+        Serial.write(dados[indice - 1][0]);
+        Serial.write(dados[indice - 1][1]);
+        Serial.println();
+        break;
+
+      default:
+        Serial.println("Comando inválido!");
+        break;
+    }
+  }
 }
