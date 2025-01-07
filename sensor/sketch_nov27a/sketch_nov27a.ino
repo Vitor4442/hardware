@@ -1,110 +1,81 @@
-#include <DHT.h>
-#define DHTPIN 2
-#define DHTTYPE DHT22
-#define ESTADO_1 1
-#define ESTADO_2 2
-#define ESTADO_3 3
-#define ESTADO_4 4
+#define MAX_REGISTROS 10       // Número máximo de registros a serem armazenados
+#define TEMP_D 2000            // Tempo de delay entre os comandos (em milissegundos)
 
-DHT dht(DHTPIN, DHTTYPE);
-char dados[6];
-int indice = 0;
-int contador = 0;
-int ControlEstado = 0;
-
-void converterASCparadec(int valor, char& digito1, char& digito2, int base) {
-  if (base != 16) {
-    Serial.println("Base inválida! Use apenas base 16.");
-    return;
-  }
-
-  int dezena = valor / base;
-  int unidade = valor % base;
-
-  digito1 = (dezena <= 9) ? (dezena + '0') : (dezena - 10 + 'A');
-  digito2 = (unidade <= 9) ? (unidade + '0') : (unidade - 10 + 'A');
-}
-
-void processarMensagem(char dado) {
-  char umidDig1, umidDig2;
-  char tempDig1, tempDig2;
-  int umidade = dht.readHumidity();
-  int temperatura = dht.readTemperature();
-
-  if (isnan(umidade) || isnan(temperatura)) {
-    Serial.println("Falha ao ler o sensor!");
-    return;
-  }
-
-  converterASCparadec(umidade, umidDig1, umidDig2, 16);
-  converterASCparadec(temperatura, tempDig1, tempDig2, 16);
-
-  char header1 = 'A';
-  char header2 = 'B';
-
-  switch (dado) {
-    case 't':
-      Serial.println("Enviando temperatura:");
-      Serial.write(header1);
-      Serial.write(header2);
-      Serial.write(tempDig1);
-      Serial.write(tempDig2);
-      break;
-    case 'u':
-      Serial.println("Enviando umidade:");
-      Serial.write(header1);
-      Serial.write(header2);
-      Serial.write(umidDig1);
-      Serial.write(umidDig2);
-      break;
-    case 'a':
-      Serial.println("Enviando td:");
-      Serial.write(header1);
-      Serial.write(header2);
-      Serial.write(umidDig1);
-      Serial.write(umidDig2);
-      Serial.write(tempDig1);
-      Serial.write(tempDig2);
-      break;
-    case 'c':
-      Serial.println("Enviando contador:");
-      Serial.write(header1);
-      Serial.write(header2);
-      Serial.print(contador);
-      break;
-    default:
-      Serial.println("Comando inválido!");
-      break;
-  }
-}
+int indice = 0;                // Índice para o registro atual
+char respostas[7];             // Array para armazenar as respostas recebidas
+int contador_m = 0;            // Contador para os comandos enviados
+byte valorHex = 0xEB;          // Valor hexadecimal 1 para o comando
+byte valorHex2 = 0x90;         // Valor hexadecimal 2 para o comando
 
 void setup() {
-  Serial.begin(9600);
-  Serial.println("Iniciando leitura do DHT22...");
-  dht.begin();
+  Serial.begin(9600);          // Inicializa a comunicação serial a 9600 bps
 }
 
 void loop() {
-  if (Serial.available()) {
-    char msg_tipo = Serial.read();
+  // Envia comandos e recebe respostas com delays entre eles
+  Serial.write(valorHex);
+  delay(TEMP_D);
 
-    switch (ControlEstado) {
-      case ESTADO_1:
-        ControlEstado = (msg_tipo == 0xEB) ? ESTADO_2 : 0;
-        break;
-      case ESTADO_2:
-        ControlEstado = (msg_tipo == 0x90) ? ESTADO_3 : 0;
-        break;
-      case ESTADO_3:
-        processarMensagem(msg_tipo);
-        ControlEstado = 0;
-        break;
-      default:
-        ControlEstado = 0;
-        break;
+  Serial.write(valorHex2);
+  delay(TEMP_D);
+  
+  Serial.write('t');
+  delay(TEMP_D);
+  receberResposta();
+
+  Serial.write('u');
+  delay(TEMP_D);
+  receberResposta();
+
+  Serial.write('a');
+  delay(TEMP_D);
+  receberResposta();
+
+  Serial.write('c');
+  delay(TEMP_D);
+  receberResposta();
+
+  // Envia comando baseado no contador_m e recebe a resposta
+  Serial.println(contador_m);
+  delay(TEMP_D);
+  receberResposta();
+
+  contador_m++;                // Incrementa o contador para o próximo comando
+}
+
+
+// Função para receber e armazenar as respostas
+void receberResposta() {
+  if (Serial.available() >= 6) {  // Verifica se há pelo menos 6 bytes disponíveis
+    for (int i = 0; i < 6; i++) {
+      respostas[i] = Serial.read();  // Lê a resposta byte a byte
     }
+    if (Serial.available() > 0) {
+      respostas[6] = Serial.read();  // Lê um byte extra se houver
+    }
+    indice = (indice + 1) % MAX_REGISTROS;  // Atualiza o índice de registros
   }
+}
 
-  contador++;
-  delay(2000);
+// Função para exibir as respostas armazenadas
+void exibirRespostas() {
+  for (int i = 0; i < MAX_REGISTROS; i++) {  // Exibe cada registro armazenado
+    Serial.print("Registro ");
+    Serial.print(i);                        // Exibe o número do registro
+    Serial.print(": ");
+    Serial.print("Header1=");                // Exibe o header 1
+    Serial.write(respostas[0]);
+    Serial.write(respostas[1]);
+    Serial.print(" ");
+    Serial.print("Temp=");                   // Exibe a temperatura
+    Serial.write(respostas[2]);
+    Serial.write(respostas[3]);
+    Serial.print(" ");
+    Serial.print("Umidade=");                // Exibe a umidade
+    Serial.write(respostas[4]);
+    Serial.write(respostas[5]);
+    Serial.print(" ");
+    Serial.print("Contador=");               // Exibe o contador
+    Serial.println(respostas[6]);
+  }
 }
