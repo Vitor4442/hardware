@@ -1,134 +1,128 @@
+// === ARDUINO ESCRAVO ===
 #include <DHT.h>
 
-#define DHTPIN 2                  // Pino de leitura do sensor DHT22
-#define DHTTYPE DHT22             // Tipo do sensor
-#define ESTADO_1 1                // Estado 1 do sistema
-#define ESTADO_2 2                // Estado 2 do sistema
-#define ESTADO_3 3                // Estado 3 do sistema
-#define ESTADO_4 4                // Estado 4 do sistema
+#define DHTPIN 2
+#define DHTTYPE DHT22
+#define ESTADO_1 1
+#define ESTADO_2 2
+#define ESTADO_3 3
+#define ESTADO_4 4
+#define ESTADO_5 5
 
-DHT dht(DHTPIN, DHTTYPE);       // Inicializa o objeto DHT
-char dados[6];                  // Array para armazenar dados recebidos
-int indice = 0;                 // Índice para navegação dos registros
-int contador = 0;               // Contador de mensagens enviadas
-int ControlEstado = ESTADO_1;   // Controle do estado do sistema
+DHT dht(DHTPIN, DHTTYPE);
+char sum = 0;
+char proxima_leitura = 0;
+char dados[6];
+int indice = 0;
+int contador = 0;
+int ControlEstado = ESTADO_1;
 
-// Função para converter valor decimal para hexa
+// Função para converter decimal para ASCII hexadecimal
 void converterASCparadec(int valor, char& digito1, char& digito2, int base) {
-  if (base != 16) {
-    Serial.println("Base inválida! Use apenas base 16.");
-    return;
-  }
-
-  int dezena = valor / base;    // Calcula a dezena
-  int unidade = valor % base;   // Calcula a unidade
-
-  // Converte para o formato hexa
+  int dezena = valor / base;
+  int unidade = valor % base;
   digito1 = (dezena <= 9) ? (dezena + '0') : (dezena - 10 + 'A');
   digito2 = (unidade <= 9) ? (unidade + '0') : (unidade - 10 + 'A');
 }
 
-// Função para processar e enviar mensagens de acordo com o tipo
+// Função para calcular checksum (soma simples)
+byte calcularChecksum(char* dados, int tamanho) {
+  byte checksum = 0;
+  for (int i = 0; i < tamanho; i++) {
+    checksum += dados[i];
+  }
+  return checksum;
+}
+
 void processarMensagem(char msg_tipo) {
   char umidDig1, umidDig2;
   char tempDig1, tempDig2;
 
-  int umidade = dht.readHumidity();  // Lê a umidade
-  int temperatura = dht.readTemperature();  // Lê a temperatura
+  int umidade = dht.readHumidity();
+  int temperatura = dht.readTemperature();
 
   if (isnan(umidade) || isnan(temperatura)) {
     Serial.println("Falha ao ler o sensor!");
     return;
   }
 
-  // Converte os valores para ASCII em base 16
   converterASCparadec(umidade, umidDig1, umidDig2, 16);
   converterASCparadec(temperatura, tempDig1, tempDig2, 16);
 
-  char header1 = 0xEB;    // Cabeçalho 1
-  char header2 = 0x90;    // Cabeçalho 2
+  char payload[4] = { umidDig1, umidDig2, tempDig1, tempDig2 };
+  byte checksum = calcularChecksum(payload, 4);
 
-  // Envia dados de acordo com o tipo da mensagem
+  char header1 = 0xEB;
+  char header2 = 0x90;
+
+  Serial.write(header1);
+  Serial.write(header2);
+
   switch (msg_tipo) {
-    case 't':  // Envia temperatura
-      Serial.println("Enviando temperatura:");
-      Serial.write(header1);
-      Serial.write(header2);
+    case 't':
       Serial.write(tempDig1);
       Serial.write(tempDig2);
       break;
-      
-    case 'u':  // Envia umidade
-      Serial.println("Enviando umidade:");
-      Serial.write(header1);
-      Serial.write(header2);
+    case 'u':
       Serial.write(umidDig1);
       Serial.write(umidDig2);
       break;
-      
-    case 'a':  // Envia todos os dados (temperatura e umidade)
-      Serial.println("Enviando todos os dados:");
-      Serial.write(header1);
-      Serial.write(header2);
+    case 'a':
       Serial.write(umidDig1);
       Serial.write(umidDig2);
       Serial.write(tempDig1);
       Serial.write(tempDig2);
       break;
-      
-    case 'c':  // Envia contador
-      Serial.println("Enviando contador:");
-      Serial.write(header1);
-      Serial.write(header2);
+    case 'c':
       Serial.print(contador);
       break;
-
-    default:  // Comando inválido
+    default:
       Serial.println("Comando inválido!");
-      break;
+      return;
   }
+  Serial.write(checksum); // Envia o checksum
 }
 
 void setup() {
-  Serial.begin(9600);      // Inicializa a comunicação serial a 9600 bps
-  Serial.println("Iniciando leitura do DHT22...");
-  dht.begin();             // Inicializa o sensor DHT22
+  Serial.begin(9600);
+  dht.begin();
 }
 
 void loop() {
-  if (Serial.available()) {  // Verifica se há dados disponíveis para leitura
-    byte dados = Serial.read() ;  // Lê um byte de dados
-    Serial.print("Recebido: ");
-    Serial.print(dados, HEX);         // Exibe o dado recebido
-    Serial.print("Estado atual: ");
-    Serial.println(ControlEstado);  // Exibe o estado atual
-
-    switch (ControlEstado) {  // Controla os estados do sistema
+  if (Serial.available()) {
+    byte dado_recebido = Serial.read();
+    switch (ControlEstado) {
       case ESTADO_1:
-        // Se o dado recebido for 0xEB, passa para o estado 2
-        ControlEstado = (dados == 0xEB) ? ESTADO_2 : ESTADO_1;
+        ControlEstado = (dado_recebido == 0xEB) ? ESTADO_2 : ESTADO_1;
         break;
 
       case ESTADO_2:
-        // Se o dado recebido for 0x90, passa para o estado 3
-        ControlEstado = (dados == 0x90) ? ESTADO_3 : ESTADO_1;
+        ControlEstado = (dado_recebido == 0x90) ? ESTADO_3 : ESTADO_1;
         break;
 
       case ESTADO_3:
-        processarMensagem(dados);  // Processa a mensagem de acordo com o tipo
-        ControlEstado = ESTADO_4;  // Passa para o estado 4
+        proxima_leitura = dado_recebido;
+        sum += dado_recebido;
+        ControlEstado = ESTADO_4;
         break;
 
       case ESTADO_4:
-        Serial.println(dados);  // Exibe o dado recebido no estado 4
-        ControlEstado = ESTADO_1;  // Volta ao estado 1
+        contador = dado_recebido;
+        sum += dado_recebido;
+        ControlEstado = ESTADO_5;
         break;
 
-      default:
+      case ESTADO_5:
+        if (dado_recebido == sum) {
+          processarMensagem(proxima_leitura);
+        } else {
+          Serial.println("Checksum inválido!");
+        }
+        ControlEstado = ESTADO_1;
+        sum = 0;
         break;
     }
   }
-  
-  contador++;  // Incrementa o contador
-  delay(2000);  // Atraso de 2 segundos antes de repetir o loop
+  contador++;
+  delay(2000);
 }
